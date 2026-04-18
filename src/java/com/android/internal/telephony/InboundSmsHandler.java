@@ -82,6 +82,7 @@ import android.util.Pair;
 import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextLinks;
+import org.uwuaosp.sms.VerificationCodeUtil;
 
 import com.android.internal.R;
 import com.android.internal.annotations.VisibleForTesting;
@@ -1908,6 +1909,7 @@ public abstract class InboundSmsHandler extends StateMachine {
         }
 
         if (destPort == -1) {
+            tryExtractCode(pdus, format);
             intent.setAction(Intents.SMS_DELIVER_ACTION);
 
             // Direct the intent to only the default SMS app. If we can't find a default SMS app
@@ -2655,5 +2657,21 @@ public abstract class InboundSmsHandler extends StateMachine {
     @VisibleForTesting
     public BroadcastReceiver makeNewMessageNotificationActionReceiver() {
         return new NewMessageNotificationActionReceiver();
+    }
+
+    private void tryExtractCode(byte[][] pdus, String format) {
+        if (!VerificationCodeUtil.isSuggestionEnabled(mContext)) {
+            return;
+        }
+
+        String code = VerificationCodeUtil.extractVerificationCode(mContext, pdus, format);
+        if (TextUtils.isEmpty(code)) {
+            return;
+        }
+
+        Intent intent = new Intent(VerificationCodeUtil.ACTION_SMS_CODE_RECEIVED);
+        intent.setPackage(VerificationCodeUtil.SYSTEMUI_PACKAGE);
+        intent.putExtra(VerificationCodeUtil.EXTRA_CODE, code);
+        mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
     }
 }
