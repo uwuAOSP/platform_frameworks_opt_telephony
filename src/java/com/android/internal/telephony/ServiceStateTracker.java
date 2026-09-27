@@ -2870,6 +2870,15 @@ public class ServiceStateTracker extends Handler {
         useDataRegStateForDataOnlyDevices();
         processIwlanRegistrationInfo();
 
+        if (mPhone.getContext().getResources().getBoolean(
+                com.android.internal.R.bool.config_onyx_nr_unknown_workaround)
+                && mSS.getRilDataRadioTechnology() == ServiceState.RIL_RADIO_TECHNOLOGY_NR
+                && mNewSS.getRilVoiceRadioTechnology() == ServiceState.RIL_RADIO_TECHNOLOGY_NR
+                && mNewSS.getRilDataRadioTechnology() == ServiceState.RIL_RADIO_TECHNOLOGY_UNKNOWN) {
+            log("onyx: Fixing transient NR data RAT UNKNOWN -> NR");
+            mNewSS.setRilDataRadioTechnology(ServiceState.RIL_RADIO_TECHNOLOGY_NR);
+        }
+
         updateNrFrequencyRangeFromPhysicalChannelConfigs(mLastPhysicalChannelConfigList, mNewSS);
         updateNrStateFromPhysicalChannelConfigs(mLastPhysicalChannelConfigList, mNewSS);
         updateNtnCapability();
